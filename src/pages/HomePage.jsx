@@ -17,7 +17,7 @@ const HomePage = () => {
         {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
           <div key={item} className="bg-white rounded-xl shadow-lg overflow-hidden transform hover:scale-105 transition-all duration-300 hover:shadow-xl border border-gray-50">
             <img 
-              src={`https://source.unsplash.com/random/400x300?portrait&sig=${item}`}
+              src={`https://source.unsplash.com/random/400x300?portrait&random=${item}`}
               alt={`Portrait ${item}`}
               className="w-full h-48 object-cover"
             />
