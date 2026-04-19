@@ -15,6 +15,7 @@ const ArtistCreatePortraitPage = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -22,8 +23,8 @@ const ArtistCreatePortraitPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
+    setLoading(true);
 
     if (!user?.id) {
       setError('You must be logged in to create a portrait.');
@@ -31,7 +32,30 @@ const ArtistCreatePortraitPage = () => {
       return;
     }
 
+    if (!selectedFile) {
+      setError('Please select an image file.');
+      setLoading(false);
+      return;
+    }
+
     try {
+      // Upload file to Supabase storage
+      const fileExt = selectedFile.name.split('.').pop();
+      const fileName = `${Math.random()}_${Date.now()}.${fileExt}`;
+      const { data: uploadData, error: uploadError } = await supabase
+        .storage
+        .from('portraits')
+        .upload(fileName, selectedFile);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase
+        .storage
+        .from('portraits')
+        .getPublicUrl(fileName);
+
+      // Insert portrait data
       const { data, error } = await supabase
         .from('portraits')
         .insert({
@@ -39,7 +63,7 @@ const ArtistCreatePortraitPage = () => {
           title: formData.title,
           description: formData.description,
           price: parseFloat(formData.price),
-          image_url: formData.imageUrl,
+          image_url: publicUrl,
           tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag !== ''),
         })
         .select();
@@ -47,7 +71,7 @@ const ArtistCreatePortraitPage = () => {
       if (error) throw error;
 
       alert('Portrait submitted successfully!');
-      navigate('/dashboard'); // Redirect to artist dashboard after submission
+      navigate('/dashboard');
     } catch (err) {
       setError(err.message);
       console.error('Error submitting portrait:', err);
