@@ -13,13 +13,13 @@ const HomePage = () => {
       </div>
       
       {/* Placeholder for portrait cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-        {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+        {[1, 2].map((item) => (
           <div key={item} className="bg-white rounded-xl shadow-lg overflow-hidden transform hover:scale-105 transition-all duration-300 hover:shadow-xl border border-gray-50">
             <img 
-              src={`https://source.unsplash.com/random/400x300?portrait&random=${item}`}
+              src={`https://source.unsplash.com/random/400x400?portrait&random=${item}`}
               alt={`Portrait ${item}`}
-              className="w-full h-48 object-cover"
+              className="w-full h-64 object-cover"
             />
             <div className="p-6">
               <h3 className="text-2xl font-semibold text-gray-900 mb-3 tracking-tight">
