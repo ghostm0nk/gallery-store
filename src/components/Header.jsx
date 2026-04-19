@@ -1,46 +1,62 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
-function Header({ session, onLogout }) {
+const Header = () => {
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error.message);
+    }
+  };
+
   return (
-    <header className="bg-white shadow-md py-4 px-4 sm:px-6 lg:px-8">
-      <nav className="container mx-auto flex justify-between items-center">
-        <Link to="/" className="text-2xl font-bold text-gray-900 hover:text-gray-700 transition-colors duration-200">
+    <header className="bg-white shadow-md p-4 w-full">
+      <div className="container mx-auto flex justify-between items-center">
+        <Link to="/" className="text-2xl font-bold text-gray-800 hover:text-blue-600 transition-colors duration-200">
           Gallery Store
         </Link>
-        <div className="flex items-center space-x-6">
+        <nav className="space-x-4">
           <Link to="/" className="text-gray-700 hover:text-blue-600 transition-colors duration-200">
-            Home
+            Browse
           </Link>
           <Link to="/cart" className="text-gray-700 hover:text-blue-600 transition-colors duration-200">
             Cart
           </Link>
-          {session ? (
+          {user ? (
             <>
               <Link to="/dashboard" className="text-gray-700 hover:text-blue-600 transition-colors duration-200">
                 Dashboard
               </Link>
+              {user.profile?.role === 'artist' && (
+                <Link to="/artist/create" className="text-gray-700 hover:text-blue-600 transition-colors duration-200">
+                  Upload Portrait
+                </Link>
+              )}
               <button
-                onClick={onLogout}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition-all duration-200"
+                onClick={handleSignOut}
+                className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors duration-200"
               >
-                Logout
+                Sign Out
               </button>
             </>
           ) : (
             <>
-              <Link to="/login" className="text-gray-700 hover:text-blue-600 transition-colors duration-200">
+              <Link to="/auth/login" className="text-gray-700 hover:text-blue-600 transition-colors duration-200">
                 Login
               </Link>
-              <Link to="/register" className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-all duration-200">
+              <Link to="/auth/register" className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200">
                 Register
               </Link>
             </>
           )}
-        </div>
-      </nav>
+        </nav>
+      </div>
     </header>
   );
-}
+};
 
 export default Header;
