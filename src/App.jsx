@@ -1,21 +1,20 @@
 import { useState, useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
-import { supabase } from './lib/supabase';
-
-import Navbar from './components/Navbar';
+import { Routes, Route, useNavigate } from 'react-router-dom';
+import Header from './components/Header';
 import Footer from './components/Footer';
-
 import HomePage from './pages/HomePage';
-import ProductDetailPage from './pages/ProductDetailPage';
+import AuthForm from './pages/AuthForm';
+import PortraitDetail from './pages/PortraitDetail';
+import ArtistProfile from './pages/ArtistProfile';
 import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
-import SearchPage from './pages/SearchPage';
-import AboutPage from './pages/AboutPage';
-import AuthForm from './components/AuthForm';
-import ProfilePage from './pages/ProfilePage';
+import DashboardPage from './pages/DashboardPage';
+import NewPortrait from './pages/NewPortrait';
+import { supabase } from './lib/supabase';
 
 function App() {
   const [session, setSession] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -31,19 +30,26 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    navigate('/login');
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar session={session} />
-      <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <Header session={session} onLogout={handleLogout} />
+      <main className="flex-grow container mx-auto px-4 py-8">
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/product/:id" element={<ProductDetailPage />} />
+          <Route path="/login" element={<AuthForm type="login" />} />
+          <Route path="/register" element={<AuthForm type="register" />} />
+          <Route path="/portraits/:id" element={<PortraitDetail />} />
+          <Route path="/artists/:id" element={<ArtistProfile />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/auth" element={<AuthForm />} />
-          <Route path="/profile" element={<ProfilePage session={session} />} />
+          <Route path="/dashboard" element={<DashboardPage session={session} />} />
+          <Route path="/dashboard/portraits/new" element={<NewPortrait session={session} />} />
         </Routes>
       </main>
       <Footer />
