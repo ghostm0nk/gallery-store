@@ -16,11 +16,11 @@ const HomePage = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
         {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
           <div key={item} className="bg-white rounded-xl shadow-lg overflow-hidden transform hover:scale-105 transition-all duration-300 hover:shadow-xl border border-gray-50">
-            <div className="h-48 w-full bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-              <div className="text-gray-400 text-lg font-medium">
-                Portrait Preview
-              </div>
-            </div>
+            <img 
+              src={`https://source.unsplash.com/random/400x300?portrait&sig=${item}`}
+              alt={`Portrait ${item}`}
+              className="w-full h-48 object-cover"
+            />
             <div className="p-6">
               <h3 className="text-2xl font-semibold text-gray-900 mb-3 tracking-tight">
                 Portrait Title {item}
