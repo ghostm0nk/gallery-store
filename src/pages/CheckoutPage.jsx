@@ -1,128 +1,142 @@
-import React, { useState } from 'react';
-import InputField from '../components/InputField';
-import Button from '../components/Button';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import PaymentForm from '../components/PaymentForm';
+import { supabase } from '../lib/supabase';
 
 function CheckoutPage() {
-  const [customerInfo, setCustomerInfo] = useState({
-    name: '',
-    email: '',
-    address: '',
-    city: '',
-    zip: '',
-  });
-  const [paymentInfo, setPaymentInfo] = useState({
-    cardNumber: '',
-    expiry: '',
-    cvv: '',
-  });
+  const navigate = useNavigate();
+  const [cartItems, setCartItems] = useState([]);
+  const [totalAmount, setTotalAmount] = useState(0);
+  const [paymentStatus, setPaymentStatus] = useState(null); // 'success', 'failed', 'processing'
+  const [paymentMessage, setPaymentMessage] = useState('');
+  const [session, setSession] = useState(null);
 
-  const handleCustomerChange = (e) => {
-    const { id, value } = e.target;
-    setCustomerInfo((prev) => ({ ...prev, [id]: value }));
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const savedCart = localStorage.getItem('gallery_store_cart');
+    if (savedCart) {
+      const parsedCart = JSON.parse(savedCart);
+      setCartItems(parsedCart);
+      const calculatedTotal = parsedCart.reduce((sum, item) => sum + item.portrait.price * item.quantity, 0);
+      setTotalAmount(calculatedTotal);
+    } else {
+      navigate('/cart'); // Redirect if cart is empty
+    }
+  }, [navigate]);
+
+  const handlePaymentSuccess = async (transactionDetails) => {
+    setPaymentStatus('processing');
+    setPaymentMessage('Payment successful, finalizing order...');
+
+    if (!session?.user?.id) {
+      setPaymentStatus('failed');
+      setPaymentMessage('User not logged in. Cannot finalize order.');
+      return;
+    }
+
+    try {
+      const orderItems = cartItems.map(item => ({
+        portrait_id: item.portrait.id,
+        quantity: item.quantity,
+        price: item.portrait.price
+      }));
+
+      const { data, error } = await supabase.from('orders').insert({
+        user_id: session.user.id,
+        total: totalAmount,
+        status: 'completed',
+        items: orderItems,
+      }).select();
+
+      if (error) {
+        throw error;
+      }
+
+      setPaymentStatus('success');
+      setPaymentMessage(`Order placed successfully! Transaction ID: ${transactionDetails.transactionId}`);
+      localStorage.removeItem('gallery_store_cart'); // Clear cart after successful order
+      setTimeout(() => navigate('/dashboard'), 3000); // Redirect to dashboard or order history
+    } catch (error) {
+      setPaymentStatus('failed');
+      setPaymentMessage(`Error finalizing order: ${error.message}`);
+    }
   };
 
-  const handlePaymentChange = (e) => {
-    const { id, value } = e.target;
-    setPaymentInfo((prev) => ({ ...prev, [id]: value }));
+  const handlePaymentError = (errorMessage) => {
+    setPaymentStatus('failed');
+    setPaymentMessage(`Payment failed: ${errorMessage}`);
   };
 
-  const handleSubmitOrder = (e) => {
-    e.preventDefault();
-    alert('Order submitted! (This is a mock checkout)');
-    console.log('Customer Info:', customerInfo);
-    console.log('Payment Info:', paymentInfo);
-    // In a real app, this would integrate with a payment gateway and backend
-  };
+  if (!session) {
+    return (
+      <div className="text-center py-12 text-gray-700 text-xl">
+        Please <Link to="/login" className="text-blue-600 hover:underline">log in</Link> to proceed to checkout.
+      </div>
+    );
+  }
+
+  if (cartItems.length === 0 && paymentStatus !== 'success') {
+    return (
+      <div className="text-center py-12 text-gray-700 text-xl">
+        Your cart is empty. Please add items to your cart before checking out.
+        <br />
+        <Link to="/" className="mt-4 inline-block px-6 py-3 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-all duration-200">
+          Continue Shopping
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <div className="py-8 max-w-3xl mx-auto">
-      <h1 className="text-4xl font-bold text-gray-900 text-center mb-8">Checkout</h1>
+    <div className="container mx-auto p-4 md:p-8">
+      <h1 className="text-4xl font-extrabold text-gray-900 mb-8 text-center">Checkout</h1>
 
-      <form onSubmit={handleSubmitOrder} className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Customer Information</h2>
-        <InputField
-          label="Full Name"
-          id="name"
-          value={customerInfo.name}
-          onChange={handleCustomerChange}
-          required
-        />
-        <InputField
-          label="Email Address"
-          id="email"
-          type="email"
-          value={customerInfo.email}
-          onChange={handleCustomerChange}
-          required
-        />
-        <InputField
-          label="Address"
-          id="address"
-          value={customerInfo.address}
-          onChange={handleCustomerChange}
-          required
-        />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <InputField
-            label="City"
-            id="city"
-            value={customerInfo.city}
-            onChange={handleCustomerChange}
-            required
-          />
-          <InputField
-            label="Zip Code"
-            id="zip"
-            value={customerInfo.zip}
-            onChange={handleCustomerChange}
-            required
-          />
+      {paymentStatus === 'success' && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+          <strong className="font-bold">Success!</strong>
+          <span className="block sm:inline ml-2">{paymentMessage}</span>
         </div>
-
-        <h2 className="text-2xl font-bold text-gray-900 mt-10 mb-6">Payment Information</h2>
-        <InputField
-          label="Card Number"
-          id="cardNumber"
-          type="text"
-          value={paymentInfo.cardNumber}
-          onChange={handlePaymentChange}
-          placeholder="XXXX-XXXX-XXXX-XXXX"
-          required
-        />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <InputField
-            label="Expiry Date"
-            id="expiry"
-            type="text"
-            value={paymentInfo.expiry}
-            onChange={handlePaymentChange}
-            placeholder="MM/YY"
-            required
-          />
-          <InputField
-            label="CVV"
-            id="cvv"
-            type="text"
-            value={paymentInfo.cvv}
-            onChange={handlePaymentChange}
-            placeholder="XXX"
-            required
-          />
+      )}
+      {paymentStatus === 'failed' && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+          <strong className="font-bold">Error!</strong>
+          <span className="block sm:inline ml-2">{paymentMessage}</span>
         </div>
+      )}
+      {paymentStatus === 'processing' && (
+        <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative mb-4" role="alert">
+          <strong className="font-bold">Processing...</strong>
+          <span className="block sm:inline ml-2">{paymentMessage}</span>
+        </div>
+      )}
 
-        <div className="border-t border-gray-200 pt-6 mt-8">
-          <div className="flex justify-between items-center mb-4">
-            <p className="text-xl font-bold text-gray-900">Order Total:</p>
-            <p className="text-2xl font-bold text-blue-600">$124.99</p> {/* Placeholder total */}
+      <div className="flex flex-col lg:flex-row gap-8">
+        <div className="lg:w-2/3">
+          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Order Details</h2>
+            {cartItems.map((item) => (
+              <div key={item.portrait.id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+                <span className="text-gray-700">{item.portrait.title} x {item.quantity}</span>
+                <span className="font-semibold text-gray-800">${(item.portrait.price * item.quantity).toFixed(2)}</span>
+              </div>
+            ))}
+            <div className="flex justify-between items-center pt-4 mt-4 border-t border-gray-200 text-xl font-bold text-gray-900">
+              <span>Total:</span>
+              <span>${totalAmount.toFixed(2)}</span>
+            </div>
           </div>
-          <Button
-            type="submit"
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white text-lg transform hover:scale-105"
-          >
-            Place Order
-          </Button>
         </div>
-      </form>
+        <div className="lg:w-1/3">
+          <PaymentForm
+            totalAmount={totalAmount}
+            onPaymentSuccess={handlePaymentSuccess}
+            onPaymentError={handlePaymentError}
+          />
+        </div>
+      </div>
     </div>
   );
 }
