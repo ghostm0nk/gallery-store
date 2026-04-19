@@ -1,28 +1,31 @@
 import React from 'react';
-import Button from './Button';
+import { Link } from 'react-router-dom';
 
-function CartItem({ item }) {
+function CartItem({ item, onRemove, onUpdateQuantity }) {
   return (
-    <div className="flex items-center justify-between p-4 border-b border-gray-200 last:border-b-0 bg-white rounded-lg shadow-sm mb-2">
-      <div className="flex items-center space-x-4">
-        <img
-          src={item.thumbnailUrl || 'https://via.placeholder.com/80x60?text=Item'}
-          alt={item.name}
-          className="w-20 h-16 object-cover rounded-md"
-        />
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800">{item.name}</h3>
-          <p className="text-gray-600 text-sm">{item.artist}</p>
-        </div>
+    <div className="flex items-center bg-white rounded-lg shadow-sm p-4 mb-4 border border-gray-200">
+      <img src={item.portrait.image_url} alt={item.portrait.title} className="w-20 h-20 object-cover rounded-md mr-4" />
+      <div className="flex-grow">
+        <Link to={`/portraits/${item.portrait.id}`} className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors duration-200">
+          {item.portrait.title}
+        </Link>
+        <p className="text-gray-600 text-sm">Artist: {item.portrait.artist_name || 'Unknown'}</p>
+        <p className="text-blue-600 font-bold mt-1">${item.portrait.price.toFixed(2)}</p>
       </div>
-      <div className="flex items-center space-x-4">
-        <div className="flex items-center">
-          <Button className="px-3 py-1 bg-gray-200 text-gray-800 hover:bg-gray-300">-</Button>
-          <span className="mx-3 text-lg font-medium">{item.quantity}</span>
-          <Button className="px-3 py-1 bg-gray-200 text-gray-800 hover:bg-gray-300">+</Button>
-        </div>
-        <p className="text-lg font-bold text-gray-900">${(item.price * item.quantity).toFixed(2)}</p>
-        <Button className="bg-red-500 hover:bg-red-600 text-white px-3 py-1">Remove</Button>
+      <div className="flex items-center space-x-2">
+        <input
+          type="number"
+          min="1"
+          value={item.quantity}
+          onChange={(e) => onUpdateQuantity(item.portrait.id, parseInt(e.target.value))}
+          className="w-16 p-2 border border-gray-300 rounded-md text-center"
+        />
+        <button
+          onClick={() => onRemove(item.portrait.id)}
+          className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
+        >
+          Remove
+        </button>
       </div>
     </div>
   );
